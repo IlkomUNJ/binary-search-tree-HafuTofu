@@ -1,6 +1,8 @@
 mod structure;
 mod tool;
 
+use std::collections::btree_map::Keys;
+
 use crate::structure::bst::BstNode;
 use crate::structure::tree::Node;
 use crate::structure::tree::NodeLink;
@@ -9,110 +11,181 @@ use crate::tool::generate_dotfile;
 use crate::tool::generate_dotfile_bst;
 
 fn main() {
-    //turn on to test the old code
-    // test_binary_tree();
-    test_binary_search_tree();
-}
-
-fn test_binary_search_tree(){
     let rootlink: BstNodeLink = BstNode::new_bst_nodelink(15);
     rootlink.borrow_mut().add_left_child(&rootlink, 6);
-    rootlink.borrow_mut().add_right_child(&rootlink, 18);
-
-    //add right subtree
-    let right_subtree: &Option<BstNodeLink> = &rootlink.borrow().right;
-    if let Some(right_tree_extract) = right_subtree {
-        right_tree_extract
-            .borrow_mut()
-            .add_left_child(right_tree_extract, 17);
-        right_tree_extract
-            .borrow_mut()
-            .add_right_child(right_tree_extract, 20);
-    }
-
-    //add left subtree
-    let left_subtree: &Option<BstNodeLink> = &rootlink.borrow().left;
-    if let Some(left_tree_extract) = left_subtree {
-        left_tree_extract
-            .borrow_mut()
-            .add_left_child(left_tree_extract, 3);
-        left_tree_extract
-            .borrow_mut()
-            .add_right_child(left_tree_extract, 7);
-
-        //add left subtree terminal
-        let left_subtree_terminal = &left_tree_extract.borrow().left;
-        if let Some(terminal_left_tree_link) = left_subtree_terminal{
-            terminal_left_tree_link.borrow_mut().add_left_child(terminal_left_tree_link, 2);
-            terminal_left_tree_link.borrow_mut().add_right_child(terminal_left_tree_link, 4);
-        }
-        //add 2nd level right subtree of node 7
-        let second_right_subtree = &left_tree_extract.borrow().right;
-        if let Some(second_right_subtree_link) = second_right_subtree{
-            second_right_subtree_link.borrow_mut().add_right_child(second_right_subtree_link, 13);
-
-            let third_left_subtree = &second_right_subtree_link.borrow().right;
-            if let Some(third_left_subtree_link) = third_left_subtree{
-                third_left_subtree_link.borrow_mut().add_left_child(third_left_subtree_link, 9);
-            }
-        }
-    }
-
-    //print the tree at this time
+    BstNode::tree_insert(&rootlink, 18);
+    BstNode::tree_insert(&rootlink, 17);
+    BstNode::tree_insert(&rootlink, 20);
+    BstNode::tree_insert(&rootlink, 3);
+    BstNode::tree_insert(&rootlink, 7);
+    BstNode::tree_insert(&rootlink, 2);
+    BstNode::tree_insert(&rootlink, 4);
+    BstNode::tree_insert(&rootlink, 13);
+    BstNode::tree_insert(&rootlink, 9);
     let main_tree_path = "bst_graph.dot";
     generate_dotfile_bst(&rootlink, main_tree_path);
-
-    //tree search test
-    let search_keys = vec![15, 9, 22];
-
-    for &key in search_keys.iter() {
-        print!("tree search result of key {} is ", key);
-
-        if let Some(node_result) = rootlink.borrow().tree_search(&key) {
-            println!("found -> {:?}", node_result.borrow().key);
-        } else {
-            println!("not found");
-        }
-    }
-
-    //min test
-    let min_node = rootlink.borrow().minimum();
-    println!("minimum result {:?}", min_node.borrow().key);
-
-    //max test
-    let max_node = rootlink.borrow().maximum();
-    println!("maximum result {:?}", max_node.borrow().key);
-
-    //root node get test
-    let root_node = BstNode::get_root(&max_node);
-    println!("root node {:?}", root_node.borrow().key);
-
-    //successor test
-    let query_keys = vec![
-        2, // min_node, should return its parent Some(3)
-        20, // max_node, should return None
-        15, // root_node, should return the minimum of its right tree
-        // test case for node with empty right child
-        // should return a parent of the node's ancestor if it's a left child of the parent
-        13,
-        9, 7, // other keys
-        22 // non-existent key
-    ];
-
-    for &key in query_keys.iter() {
-        if let Some(node) = rootlink.borrow().tree_search(&key) {
-            print!("successor of node ({}) is ", key);
-
-            if let Some(successor) = BstNode::tree_successor_simpler(&node) {
-                println!("{:?}", successor.borrow().key);
-            } else {
-                println!("not found");
-            }
-        } else {
-            println!("node with key of {} does not exist, failed to get successor", key)
-        }
-    }
+    let mut senode = rootlink.clone().borrow_mut().tree_search(&18).unwrap();
+    println!("parent of 18: {:?}", senode.borrow().parent.as_ref().unwrap().upgrade().unwrap().borrow().key.unwrap());
+    // BstNode::tree_delete(&mut rootlink.clone(), &senode.clone()); //BOTH CHILD EXIST SITUATION
+    let mut ti = rootlink.clone().borrow_mut().tree_search(&20);
+    println!("20 exist: {:?}", !(ti.is_none()));
+    let ti3 = rootlink.clone().borrow().tree_search(&18);
+    println!("parent of 20: {:?}", ti.unwrap().borrow().parent.as_ref().unwrap().upgrade().unwrap().borrow().key.unwrap());
+    println!("18 exist: {:?}", !(ti3.is_none()));
+    senode = rootlink.clone().borrow_mut().tree_search(&4).unwrap();
+    println!("parent of 4: {:?}", senode.borrow().parent.as_ref().unwrap().upgrade().unwrap().borrow().key.unwrap());
+    BstNode::tree_delete(&mut rootlink.clone(), &senode.clone()); //BOTH CHILD NOT EXIST SITUATION
+    ti = rootlink.clone().borrow().tree_search(&3);
+    println!("4 exist: {:?}", !(ti.unwrap().borrow().right.is_none()));
+    senode = rootlink.clone().borrow_mut().tree_search(&15).unwrap();
+    let sixnode = rootlink.clone().borrow_mut().tree_search(&6).unwrap();
+    println!("pre parent of 6: {:?}", sixnode.borrow().parent.as_ref().unwrap().upgrade().unwrap().borrow().key.unwrap());
+    let sixnode = rootlink.clone().borrow_mut().tree_search(&20).unwrap();
+    println!("pre parent of 20: {:?}", sixnode.borrow().parent.as_ref().unwrap().upgrade().unwrap().borrow().key.unwrap());
+    println!("parent of 15 exist: {:?}", !(senode.borrow().parent.is_none()));
+    BstNode::tree_delete(&mut rootlink.clone(), &senode.clone()); //DELETING HEAD NODE SITUATION
+    let main_tree_path = "bst_graph1.dot";
+    generate_dotfile_bst(&rootlink, main_tree_path);
+    let senode = rootlink.clone().borrow_mut().tree_search(&17);
+    println!("17 par exist: {:?}", !(senode.unwrap().borrow().parent.is_none()));
+    let sixnode = rootlink.clone().borrow_mut().tree_search(&6).unwrap();
+    println!("post parent of 6: {:?}", sixnode.borrow().parent.as_ref().unwrap().upgrade().unwrap().borrow().key.unwrap());
+    let sixnode = rootlink.clone().borrow_mut().tree_search(&20).unwrap();
+    println!("post parent of 20: {:?}", sixnode.borrow().parent.as_ref().unwrap().upgrade().unwrap().borrow().key.unwrap());
+    let thirteennode = rootlink.clone().borrow_mut().tree_search(&13).unwrap();
+    println!("parent of 13: {:?}", thirteennode.borrow().parent.as_ref().unwrap().upgrade().unwrap().borrow().key.unwrap());
+    let ninenode = rootlink.clone().borrow_mut().tree_search(&9).unwrap();
+    println!("PRE parent of 9: {:?}", ninenode.borrow().parent.as_ref().unwrap().upgrade().unwrap().borrow().key.unwrap());
+    println!("left child of 13: {:?}", thirteennode.borrow().left.as_ref().unwrap().borrow().key.unwrap());
+    println!("right child of 13 exist: {:?}", !(thirteennode.borrow().right.is_none()));
+    BstNode::tree_delete(&mut rootlink.clone(), &thirteennode.clone()); //ONLY LEFT CHILD EXIST SITUATION
+    let ninenode = rootlink.clone().borrow_mut().tree_search(&9).unwrap();
+    println!("POST parent of 9: {:?}", ninenode.borrow().parent.as_ref().unwrap().upgrade().unwrap().borrow().key.unwrap());
+    let sevennode = rootlink.clone().borrow_mut().tree_search(&7).unwrap();
+    println!("left child of 7 exist: {:?}", !(sevennode.borrow().left.is_none()));
+    println!("right child of 7: {:?}", sevennode.borrow().right.as_ref().unwrap().borrow().key.unwrap());
+    println!("parent of 7: {:?}", sevennode.borrow().parent.as_ref().unwrap().upgrade().unwrap().borrow().key.unwrap());
+    let ninenode = rootlink.clone().borrow_mut().tree_search(&9).unwrap();
+    println!("PRE parent of 9: {:?}", ninenode.borrow().parent.as_ref().unwrap().upgrade().unwrap().borrow().key.unwrap());
+    BstNode::tree_delete(&mut rootlink.clone(), &sevennode.clone()); //ONLY RIGHT CHILD EXIST SITUATION
+    let ninenode = rootlink.clone().borrow_mut().tree_search(&9).unwrap();
+    println!("POST parent of 9: {:?}", ninenode.borrow().parent.as_ref().unwrap().upgrade().unwrap().borrow().key.unwrap());
+    println!("PRE HEAD: {:?}", rootlink.borrow().key.unwrap());
+    let senode = rootlink.clone().borrow_mut().tree_search(&17).unwrap();
+    BstNode::tree_delete(&mut rootlink.clone(), &senode.clone());
+    println!("POST HEAD: {:?}", rootlink.borrow().key.unwrap());
+    let main_tree_path = "bst_graph2.dot";
+    generate_dotfile_bst(&rootlink, main_tree_path);
+    let senode = rootlink.clone().borrow_mut().right.as_ref().unwrap().borrow_mut().key.unwrap();
+    println!("head of right subtree: {:?}", senode);
 }
+
+
+// fn main() {
+//     //turn on to test the old code
+//     // test_binary_tree();
+//     test_binary_search_tree();
+// }
+
+// fn test_binary_search_tree(){
+//     let rootlink: BstNodeLink = BstNode::new_bst_nodelink(15);
+//     rootlink.borrow_mut().add_left_child(&rootlink, 6);
+//     rootlink.borrow_mut().add_right_child(&rootlink, 18);
+
+//     //add right subtree
+//     let right_subtree: &Option<BstNodeLink> = &rootlink.borrow().right;
+//     if let Some(right_tree_extract) = right_subtree {
+//         right_tree_extract
+//             .borrow_mut()
+//             .add_left_child(right_tree_extract, 17);
+//         right_tree_extract
+//             .borrow_mut()
+//             .add_right_child(right_tree_extract, 20);
+//     }
+
+//     //add left subtree
+//     let left_subtree: &Option<BstNodeLink> = &rootlink.borrow().left;
+//     if let Some(left_tree_extract) = left_subtree {
+//         left_tree_extract
+//             .borrow_mut()
+//             .add_left_child(left_tree_extract, 3);
+//         left_tree_extract
+//             .borrow_mut()
+//             .add_right_child(left_tree_extract, 7);
+
+//         //add left subtree terminal
+//         let left_subtree_terminal = &left_tree_extract.borrow().left;
+//         if let Some(terminal_left_tree_link) = left_subtree_terminal{
+//             terminal_left_tree_link.borrow_mut().add_left_child(terminal_left_tree_link, 2);
+//             terminal_left_tree_link.borrow_mut().add_right_child(terminal_left_tree_link, 4);
+//         }
+//         //add 2nd level right subtree of node 7
+//         let second_right_subtree = &left_tree_extract.borrow().right;
+//         if let Some(second_right_subtree_link) = second_right_subtree{
+//             second_right_subtree_link.borrow_mut().add_right_child(second_right_subtree_link, 13);
+
+//             let third_left_subtree = &second_right_subtree_link.borrow().right;
+//             if let Some(third_left_subtree_link) = third_left_subtree{
+//                 third_left_subtree_link.borrow_mut().add_left_child(third_left_subtree_link, 9);
+//             }
+//         }
+//     }
+
+//     //print the tree at this time
+    // let main_tree_path = "bst_graph.dot";
+    // generate_dotfile_bst(&rootlink, main_tree_path);
+
+//     //tree search test
+//     let search_keys = vec![15, 9, 22];
+
+//     for &key in search_keys.iter() {
+//         print!("tree search result of key {} is ", key);
+
+//         if let Some(node_result) = rootlink.borrow().tree_search(&key) {
+//             println!("found -> {:?}", node_result.borrow().key);
+//         } else {
+//             println!("not found");
+//         }
+//     }
+
+//     //min test
+//     let min_node = rootlink.borrow().minimum();
+//     println!("minimum result {:?}", min_node.borrow().key);
+
+//     //max test
+//     let max_node = rootlink.borrow().maximum();
+//     println!("maximum result {:?}", max_node.borrow().key);
+
+//     //root node get test
+//     let root_node = BstNode::get_root(&max_node);
+//     println!("root node {:?}", root_node.borrow().key);
+
+//     //successor test
+//     let query_keys = vec![
+//         2, // min_node, should return its parent Some(3)
+//         20, // max_node, should return None
+//         15, // root_node, should return the minimum of its right tree
+//         // test case for node with empty right child
+//         // should return a parent of the node's ancestor if it's a left child of the parent
+//         13,
+//         9, 7, // other keys
+//         22 // non-existent key
+//     ];
+
+//     for &key in query_keys.iter() {
+//         if let Some(node) = rootlink.borrow().tree_search(&key) {
+//             print!("successor of node ({}) is ", key);
+
+//             if let Some(successor) = BstNode::tree_successor_simpler(&node) {
+//                 println!("{:?}", successor.borrow().key);
+//             } else {
+//                 println!("not found");
+//             }
+//         } else {
+//             println!("node with key of {} does not exist, failed to get successor", key)
+//         }
+//     }
+// }
 
 #[allow(dead_code)]
 fn test_binary_tree() {
