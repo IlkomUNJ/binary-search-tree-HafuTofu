@@ -2,7 +2,7 @@
 # Assignment 4: Binary Search Tree in Rust
 
 Name: Hafizh Laththuf Muhammad
-NIM : 1313623005
+\nNIM : 1313623005
 
 The template for assignment been taken from our previous class discussion up to latest quiz. For the assignment you just need to add 3 functions:
 - tree_insert
